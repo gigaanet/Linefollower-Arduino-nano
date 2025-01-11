@@ -94,3 +94,10 @@ With the ability to calibrate the sensors and tune the PID parameters, this robo
 challenges. It's an excellent project for learning about robotics, control systems, and embedded programming, and it can serve as a foundation for more advanced robotic applications, 
 such as maze-solving or autonomous navigation tasks.
 
+**I'm also including the maze-solving algorithm for your reference. Additionally, note that when connecting two pins or the QTR sensor to digital pins, it's because A6 and A7 on the Arduino are input-only pins and do not provide output. The QTR-8RC sensor requires output capability for charging the capacitor, which is why digital pins are used.
+
+
+
+**Note that when connecting two pins or the QTR sensor to digital pins, it's because A6 and A7 on the Arduino are input-only pins and do not provide output. The QTR-8RC sensor requires output capability for charging the capacitor, which is why digital pins are used."
+
+
