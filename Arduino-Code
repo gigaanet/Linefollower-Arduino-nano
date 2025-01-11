@@ -46,7 +46,7 @@ void setup() {
     Serial.begin(9600);  // Initialize serial communication
 
     qtr.setTypeRC();
-    qtr.setSensorPins((const uint8_t[]) { A0, A1, A2, A3, A4, A5, 10, 9 }, SENSOR_COUNT);
+    qtr.setSensorPins((const uint8_t[]) {A5, A4, A3, A2, A1, A0, 9, 10 }, SENSOR_COUNT);
     
     // Calibration
     while (digitalRead(BUTTON_CALIBRATION_PIN) == HIGH) {}
