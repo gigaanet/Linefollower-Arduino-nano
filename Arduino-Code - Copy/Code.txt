@@ -1,0 +1,102 @@
+#include <QTRSensors.h>
+
+// Pin Definitions
+#define PWMA_PIN 6            // ENA connected to D7
+#define PWMB_PIN 5            // ENB connected to D6
+#define AIN1_PIN 7            // IN1 connected to D8
+#define AIN2_PIN 4            // IN2 connected to D4
+#define BIN1_PIN 3            // IN3 connected to D3
+#define BIN2_PIN 2            // IN4 connected to D2
+#define STBY_PIN 12           // Standby pin connected to D5
+#define BUTTON_CALIBRATION_PIN 8
+#define BUTTON_START_PIN 11   // Connected to D11
+
+// PID Constants
+float Kp = 0.826;
+float Ki = 0.0;
+float Kd = 3.4;
+
+// Speed Constants
+const uint8_t MAX_SPEED = 125;
+const uint8_t BASE_SPEED = 65;
+const int OFFSET_A = 1;
+const int OFFSET_B = 1;
+
+// Motor and Sensor Setup
+Motor motor1(AIN1_PIN, AIN2_PIN, PWMA_PIN, OFFSET_A, STBY_PIN);
+Motor motor2(BIN1_PIN, BIN2_PIN, PWMB_PIN, OFFSET_B, STBY_PIN);
+QTRSensors qtr;
+const uint8_t SENSOR_COUNT = 8;
+uint16_t sensorValues[SENSOR_COUNT];
+
+int lastError = 0;
+int integral = 0;
+
+void setup() {
+    pinMode(PWMA_PIN, OUTPUT);
+    pinMode(PWMB_PIN, OUTPUT);
+    pinMode(AIN1_PIN, OUTPUT);
+    pinMode(AIN2_PIN, OUTPUT);
+    pinMode(BIN1_PIN, OUTPUT);
+    pinMode(BIN2_PIN, OUTPUT);
+    pinMode(STBY_PIN, OUTPUT);
+    pinMode(BUTTON_CALIBRATION_PIN, INPUT_PULLUP);
+    pinMode(BUTTON_START_PIN, INPUT_PULLUP);
+
+    Serial.begin(9600);  // Initialize serial communication
+
+    qtr.setTypeRC();
+    qtr.setSensorPins((const uint8_t[]) {A5, A4, A3, A2, A1, A0, 9, 10 }, SENSOR_COUNT);
+    
+    // Calibration
+    while (digitalRead(BUTTON_CALIBRATION_PIN) == HIGH) {}
+    delay(300);
+    digitalWrite(LED_BUILTIN, HIGH);
+
+    for (uint16_t i = 0; i < 100; i++) {
+        motor1.drive(85);
+        motor2.drive(-85);
+        qtr.calibrate();
+    }
+
+    for (int i = 0; i <= 100; i++) {
+        motor1.drive(-85);
+        motor2.drive(85);
+        qtr.calibrate();
+    }
+
+    digitalWrite(LED_BUILTIN, LOW);
+    motor1.brake();
+    motor2.brake();
+    delay(200);
+
+    // Wait for start button press
+    while (digitalRead(BUTTON_START_PIN) == HIGH) {}
+}
+
+void PID_Control() {
+    uint16_t position = qtr.readLineBlack(sensorValues);
+    int error = 3500 - position;
+    integral += error;
+    int derivative = error - lastError;
+    lastError = error;
+
+    int motorSpeed = Kp * error + Ki * integral + Kd * derivative;
+    int motorSpeedA = BASE_SPEED + motorSpeed;
+    int motorSpeedB = BASE_SPEED - motorSpeed;
+
+    // Limit motor speeds
+    motorSpeedA = constrain(motorSpeedA, -50, MAX_SPEED);
+    motorSpeedB = constrain(motorSpeedB, -50, MAX_SPEED);
+
+    mspeed(motorSpeedA, motorSpeedB);
+}
+
+void mspeed(int posA, int posB) {
+    motor1.drive(posA);
+    motor2.drive(posB);
+}
+
+void loop() {
+    PID_Control();
+}
